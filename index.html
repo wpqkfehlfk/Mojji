@@ -111,7 +111,7 @@
       <!-- GPU WebGL 캔버스 -->
       <canvas id="glCanvas" class="w-full h-full object-contain block"></canvas>
 
-      <!-- 마스크 시각화 오버레이 캔버스 (칠하기 모드 전용) -->
+      <!-- 마스크 시각화 오버레이 캔버스 -->
       <canvas id="overlayCanvas" class="w-full h-full object-contain block absolute inset-0 pointer-events-none hidden"></canvas>
 
       <!-- 브러시 링 커서 -->
@@ -134,9 +134,9 @@
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>볼 탄성 (복귀 속도)</span>
-            <span id="txtElasticity" class="text-pink-400 font-mono">0.22</span>
+            <span id="txtElasticity" class="text-pink-400 font-mono">0.24</span>
           </div>
-          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.22" class="ios-slider w-full">
+          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.24" class="ios-slider w-full">
         </div>
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
@@ -210,7 +210,7 @@
       </div>
 
       <p class="text-[11px] text-zinc-400 text-center bg-zinc-900/60 py-2 px-3 rounded-xl border border-zinc-800">
-        늘이고 싶은 <b>볼 부분</b>을 칠해주세요. (눈과 코를 제외하고 칠하면 볼만 깔끔하게 당겨집니다)
+        늘이고 싶은 <b>볼 부분</b>을 칠해주세요. (눈과 코를 피해서 칠하면 깔끔하게 당겨집니다)
       </p>
     </div>
 
@@ -226,7 +226,7 @@
     </div>
   </section>
 
-  <!-- WebGL 셰이더 및 로직 -->
+  <!-- WebGL 셰이더 및 핵심 로직 -->
   <script>
     const CANVAS_SIZE = 720;
     const glCanvas = document.getElementById('glCanvas');
@@ -242,13 +242,13 @@
     const container = document.getElementById('canvasContainer');
     const brushCursor = document.getElementById('brushCursor');
 
-    // 마스크 버퍼 (볼 영역 가중치)
+    // 마스크 버퍼
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = CANVAS_SIZE;
     maskCanvas.height = CANVAS_SIZE;
     const maskCtx = maskCanvas.getContext('2d');
 
-    // WebGL 메시: 50x50 촘촘한 정밀 메시 (GPU이므로 수천 개여도 0ms 지연)
+    // 50x50 정밀 메시
     const GRID = 50;
     const numVertices = (GRID + 1) * (GRID + 1);
     const posArray = new Float32Array(numVertices * 2);
@@ -257,7 +257,6 @@
     const weightArray = new Float32Array(numVertices);
     const velArray = new Float32Array(numVertices * 2);
 
-    // 격자 좌표 & UV 세팅
     let idx = 0;
     for (let y = 0; y <= GRID; y++) {
       for (let x = 0; x <= GRID; x++) {
@@ -280,7 +279,6 @@
       }
     }
 
-    // 삼각형 인덱스 생성 (구멍이나 찢어짐 없는 견고한 인덱스 버퍼)
     const indices = [];
     for (let y = 0; y < GRID; y++) {
       for (let x = 0; x < GRID; x++) {
@@ -295,7 +293,6 @@
     }
     const indexArray = new Uint16Array(indices);
 
-    // WebGL 셰이더 소스
     const vsSource = `
       attribute vec2 a_position;
       attribute vec2 a_uv;
@@ -329,7 +326,6 @@
     const aPosLoc = gl.getAttribLocation(prog, 'a_position');
     const aUvLoc = gl.getAttribLocation(prog, 'a_uv');
 
-    // 버퍼 바인딩
     const posBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, posArray, gl.DYNAMIC_DRAW);
@@ -346,7 +342,6 @@
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
 
-    // 텍스처
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -358,7 +353,7 @@
     let paintTool = 'brush';
     let brushRadius = 35;
     let maskOpacity = 0.6;
-    let elasticity = 0.22;
+    let elasticity = 0.24;
     let influenceRadius = 140;
     let springBack = true;
     let soundEnabled = true;
@@ -367,7 +362,7 @@
     let isDragging = false;
     let touches = new Map();
 
-    // 신디사이저 사운드
+    // 오디오 신디사이저
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -391,7 +386,6 @@
       } catch(e) {}
     }
 
-    // 마우스/터치 절대 좌표 계산
     function getCoords(clientX, clientY) {
       const rect = glCanvas.getBoundingClientRect();
       return {
@@ -400,7 +394,6 @@
       };
     }
 
-    // 가중치 업데이트 (수학적 원형 분포)
     function applyDirectWeight(cx, cy, radius, isAdd) {
       const rSq = radius * radius;
       for (let i = 0; i < numVertices; i++) {
@@ -423,7 +416,6 @@
       }
     }
 
-    // 마스크 오버레이 다시 그리기
     function updateOverlay() {
       overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       overlayCtx.globalAlpha = maskOpacity;
@@ -454,7 +446,7 @@
       updateOverlay();
     }
 
-    // 찰진 볼 변형 (GPU 버퍼에 직접 기록)
+    // [핵심 변경] 당길 때 정점에 가해진 변위가 사라지지 않고 유지됨
     function applyDeformation(targetX, targetY, prevX, prevY) {
       const dxNorm = ((targetX - prevX) / CANVAS_SIZE) * 2.0;
       const dyNorm = -((targetY - prevY) / CANVAS_SIZE) * 2.0;
@@ -474,15 +466,19 @@
           const factor = (1.0 - Math.sqrt(distSq) / influenceRadius) * w;
           posArray[i * 2] += dxNorm * factor;
           posArray[i * 2 + 1] += dyNorm * factor;
+          // 드래그 중인 동안에는 복귀 속도 벡터 초기화
+          velArray[i * 2] = 0;
+          velArray[i * 2 + 1] = 0;
         }
       }
     }
 
-    // 탄성 스프링 복귀
+    // [핵심 변경] 사용자가 잡고 있는 동안(isDragging = true)에는 절대 복귀하지 않음!
+    // 손을 완전히 떼었을 때만(isDragging = false) 스프링 물리로 원위치 복귀
     function updatePhysics() {
-      if (!springBack && isDragging) return;
+      if (isDragging || !springBack) return;
 
-      const damping = 0.84;
+      const damping = 0.82;
       for (let i = 0; i < numVertices; i++) {
         const w = weightArray[i];
         if (w <= 0.01) continue;
@@ -502,11 +498,9 @@
       }
     }
 
-    // WebGL 메인 렌더 루프 (60FPS 초고속 하드웨어 렌더링)
     function render() {
       updatePhysics();
 
-      // GPU 정점 버퍼 업로드 (순식간에 처리)
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, posArray);
 
@@ -516,13 +510,11 @@
       requestAnimationFrame(render);
     }
 
-    // 텍스처 업로드
     function updateGLTexture(img) {
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }
 
-    // 기본 샘플 캐릭터 생성
     function loadSampleImage() {
       const off = document.createElement('canvas');
       off.width = CANVAS_SIZE;
@@ -535,7 +527,6 @@
       const cx = CANVAS_SIZE / 2;
       const cy = CANVAS_SIZE / 2;
 
-      // 찹쌀떡 캐릭터
       octx.beginPath();
       octx.ellipse(cx, cy + 20, 220, 180, 0, 0, Math.PI * 2);
       octx.fillStyle = '#ffffff';
@@ -586,7 +577,6 @@
       const img = new Image();
       img.onload = () => {
         updateGLTexture(img);
-        // 기본 양볼 마스크 프리셋
         maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         for (let i = 0; i < numVertices; i++) weightArray[i] = 0;
 
@@ -616,7 +606,6 @@
       }
     }
 
-    // 커서 동기화
     function updateCursor(clientX, clientY) {
       const rect = container.getBoundingClientRect();
       brushCursor.style.left = `${clientX - rect.left}px`;
@@ -626,7 +615,7 @@
       brushCursor.style.height = `${diam}px`;
     }
 
-    // 이벤트 리스너
+    // 마우스 이벤트 바인딩
     container.addEventListener('mousemove', (e) => {
       if (currentMode === 'paint') {
         brushCursor.classList.remove('hidden');
@@ -666,7 +655,7 @@
 
     container.addEventListener('mouseleave', () => brushCursor.classList.add('hidden'));
 
-    // 멀티터치
+    // 멀티터치 바인딩
     container.addEventListener('touchstart', (e) => {
       e.preventDefault();
       initAudio();
@@ -713,7 +702,6 @@
       }
     });
 
-    // 사진 파일 업로드
     function loadFileImage(file) {
       if (!file || !file.type.startsWith('image/')) return;
       const reader = new FileReader();
@@ -753,7 +741,6 @@
       if (e.target.files && e.target.files[0]) loadFileImage(e.target.files[0]);
     });
 
-    // 클립보드 붙여넣기 (Ctrl + V)
     window.addEventListener('paste', (e) => {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -765,7 +752,6 @@
       }
     });
 
-    // 모드 탭
     const tabSquish = document.getElementById('tabSquish');
     const tabPaint = document.getElementById('tabPaint');
     const panelSquish = document.getElementById('panelSquish');
@@ -793,7 +779,6 @@
     tabSquish.addEventListener('click', () => setMode('squish'));
     tabPaint.addEventListener('click', () => setMode('paint'));
 
-    // 브러시 도구
     const btnToolBrush = document.getElementById('btnToolBrush');
     const btnToolEraser = document.getElementById('btnToolEraser');
     btnToolBrush.addEventListener('click', () => {
@@ -817,7 +802,6 @@
       updateOverlay();
     });
 
-    // 슬라이더 바인딩
     document.getElementById('sliderBrushRadius').addEventListener('input', (e) => {
       brushRadius = parseInt(e.target.value);
       document.getElementById('txtBrushRadius').innerText = `${brushRadius}px`;
@@ -850,7 +834,6 @@
 
     document.getElementById('btnSample').addEventListener('click', () => loadSampleImage());
 
-    // 스냅샷
     document.getElementById('btnSnapshot').addEventListener('click', () => {
       const link = document.createElement('a');
       link.download = `moti-hoppe-${Date.now()}.png`;
@@ -858,7 +841,6 @@
       link.click();
     });
 
-    // 녹화
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
@@ -928,7 +910,6 @@
       recBadge.classList.add('hidden');
     }
 
-    // 초기 구동
     loadSampleImage();
     render();
   </script>
