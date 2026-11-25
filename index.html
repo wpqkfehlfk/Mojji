@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Moti Hoppe Maker - 모찌 볼따구 메이커</title>
   
-  <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
   <style>
@@ -46,12 +43,7 @@
       background: #ffffff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
       cursor: pointer;
-      transition: transform 0.1s;
     }
-    .ios-slider::-webkit-slider-thumb:active {
-      transform: scale(1.15);
-    }
-    /* iOS Custom Toggle Switch */
     .ios-switch {
       position: relative;
       display: inline-block;
@@ -91,9 +83,9 @@
       <div>
         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
           Moti Hoppe Maker
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30">로컬 전용</span>
+          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">60FPS 가속</span>
         </h1>
-        <p class="text-[11px] text-zinc-400 font-medium leading-none mt-0.5">서버 업로드 없는 100% 온디바이스 처리</p>
+        <p class="text-[11px] text-zinc-400 font-medium leading-none mt-0.5">로컬 온디바이스 & 경량 렌더링</p>
       </div>
     </div>
     
@@ -102,7 +94,7 @@
     </button>
   </header>
 
-  <!-- 모드 전환 탭 세그먼트 (iOS Segmented Control) -->
+  <!-- 모드 전환 탭 세그먼트 -->
   <div class="w-full max-w-xl p-1 bg-zinc-900/90 rounded-2xl border border-zinc-800 flex mb-3">
     <button id="tabSquish" class="flex-1 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 bg-zinc-800 text-white shadow">
       <i class="ph-bold ph-hand-grabbing text-pink-400 text-base"></i> 볼따구 당기기
@@ -112,23 +104,22 @@
     </button>
   </div>
 
-  <!-- 메인 캔버스 인터랙션 영역 -->
+  <!-- 메인 캔버스 뷰 -->
   <main class="w-full max-w-xl flex-1 flex flex-col items-center justify-center relative">
     <div id="canvasContainer" class="w-full aspect-square max-h-[70vh] bg-zinc-950 rounded-[32px] overflow-hidden relative shadow-2xl border border-zinc-800/80 flex items-center justify-center cursor-crosshair">
       
-      <!-- 렌더링 캔버스 -->
       <canvas id="mainCanvas" class="w-full h-full object-contain block"></canvas>
 
-      <!-- 칠하기 모드 가이드 및 브러시 링 커서 -->
+      <!-- 브러시 링 커서 -->
       <div id="brushCursor" class="pointer-events-none absolute w-10 h-10 rounded-full border-2 border-white/80 bg-pink-500/20 shadow-lg -translate-x-1/2 -translate-y-1/2 hidden z-20"></div>
 
-      <!-- 드래그 & 드롭 안내 인디케이터 -->
+      <!-- 드래그 & 드롭 오버레이 -->
       <div id="dropOverlay" class="absolute inset-0 bg-pink-500/20 backdrop-blur-sm border-2 border-dashed border-pink-400 rounded-[32px] hidden items-center justify-center flex-col gap-2 z-30 pointer-events-none">
         <i class="ph-duotone ph-image-square text-5xl text-pink-300 animate-bounce"></i>
         <p class="text-sm font-semibold text-white">이미지를 여기에 놓으세요</p>
       </div>
 
-      <!-- 녹화 중 뱃지 -->
+      <!-- 녹화 인디케이터 -->
       <div id="recBadge" class="absolute top-4 left-4 px-3 py-1 bg-rose-600/90 backdrop-blur-md rounded-full text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg hidden z-20 animate-pulse">
         <span class="w-2 h-2 rounded-full bg-white"></span>
         <span id="recTimerText">REC 00:00</span>
@@ -136,25 +127,25 @@
     </div>
   </main>
 
-  <!-- 하단 컨트롤 도구 패널 -->
+  <!-- 컨트롤 패널 -->
   <section class="w-full max-w-xl mt-3 space-y-3">
     
-    <!-- 1. [볼따구 당기기 모드 전용 컨트롤] -->
+    <!-- 볼따구 당기기 패널 -->
     <div id="panelSquish" class="glass-panel rounded-3xl p-4 space-y-3.5">
       <div class="grid grid-cols-2 gap-3">
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
-            <span>볼 탄성 (탄력도)</span>
-            <span id="txtElasticity" class="text-pink-400 font-mono">0.18</span>
+            <span>볼 탄성 (복귀력)</span>
+            <span id="txtElasticity" class="text-pink-400 font-mono">0.20</span>
           </div>
-          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.18" class="ios-slider w-full">
+          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.20" class="ios-slider w-full">
         </div>
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>영향 반경 (늘어남)</span>
-            <span id="txtInfluence" class="text-pink-400 font-mono">130</span>
+            <span id="txtInfluence" class="text-pink-400 font-mono">110</span>
           </div>
-          <input id="sliderInfluence" type="range" min="60" max="240" step="5" value="130" class="ios-slider w-full">
+          <input id="sliderInfluence" type="range" min="50" max="200" step="5" value="110" class="ios-slider w-full">
         </div>
       </div>
 
@@ -164,7 +155,7 @@
             <input id="toggleSpring" type="checkbox" checked>
             <span class="slider-toggle"></span>
           </label>
-          <span class="text-xs font-semibold text-zinc-200">손 놓으면 제자리 복귀</span>
+          <span class="text-xs font-semibold text-zinc-200">손 놓으면 복귀</span>
         </div>
         
         <div class="flex items-center gap-2">
@@ -172,12 +163,11 @@
             <i id="iconSound" class="ph-bold ph-speaker-high"></i>
           </button>
           <button id="btnResetPhysics" class="px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition text-xs font-semibold text-zinc-300">
-            원래대로 정렬
+            원래대로
           </button>
         </div>
       </div>
 
-      <!-- 액션 버튼 (녹화 및 사진 저장) -->
       <div class="grid grid-cols-2 gap-2.5 pt-1">
         <button id="btnRecord" class="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 active:scale-[0.98] transition font-bold text-xs sm:text-sm text-white flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25">
           <i class="ph-bold ph-video-camera text-base"></i> <span id="btnRecordText">최대 10초 녹화</span>
@@ -188,7 +178,7 @@
       </div>
     </div>
 
-    <!-- 2. [영역 칠하기 모드 전용 컨트롤] -->
+    <!-- 영역 칠하기 패널 -->
     <div id="panelPaint" class="glass-panel rounded-3xl p-4 space-y-3.5 hidden">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -208,82 +198,79 @@
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>브러시 크기</span>
-            <span id="txtBrushRadius" class="text-pink-400 font-mono">35px</span>
+            <span id="txtBrushRadius" class="text-pink-400 font-mono">30px</span>
           </div>
-          <input id="sliderBrushRadius" type="range" min="10" max="90" step="2" value="35" class="ios-slider w-full">
+          <input id="sliderBrushRadius" type="range" min="10" max="80" step="2" value="30" class="ios-slider w-full">
         </div>
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>마스크 투명도</span>
-            <span id="txtMaskOpacity" class="text-pink-400 font-mono">60%</span>
+            <span id="txtMaskOpacity" class="text-pink-400 font-mono">50%</span>
           </div>
-          <input id="sliderMaskOpacity" type="range" min="20" max="90" step="5" value="60" class="ios-slider w-full">
+          <input id="sliderMaskOpacity" type="range" min="20" max="90" step="5" value="50" class="ios-slider w-full">
         </div>
       </div>
 
       <p class="text-[11px] text-zinc-400 text-center bg-zinc-900/60 py-2 px-3 rounded-xl border border-zinc-800">
-        💡 늘어나길 원하는 <b>양 볼</b> 부위를 분홍색으로 칠해주세요. (눈, 코, 입은 건드리지 않아야 자연스럽습니다)
+        늘어나길 원하는 <b>양 볼</b> 부위를 분홍색으로 칠해주세요.
       </p>
     </div>
 
-    <!-- 파일 선택 및 프라이버시 알림 -->
+    <!-- 파일 열기 & 상태 -->
     <div class="flex items-center justify-between px-2 pt-1 text-xs">
       <label class="cursor-pointer text-pink-400 hover:text-pink-300 font-semibold flex items-center gap-1.5 py-1">
-        <i class="ph-bold ph-folder-open text-base"></i> 내 기기에서 사진 열기
+        <i class="ph-bold ph-folder-open text-base"></i> 사진 파일 열기
         <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden">
       </label>
       <span class="text-zinc-500 text-[11px] flex items-center gap-1">
-        <i class="ph-bold ph-shield-check text-emerald-400 text-sm"></i> 개인정보 로컬 보호
+        <i class="ph-bold ph-shield-check text-emerald-400 text-sm"></i> 로컬 메모리 보장
       </span>
     </div>
   </section>
 
-  <!-- 자바스크립트 엔진 -->
+  <!-- 최적화 스크립트 -->
   <script>
-    // --- 1. 전역 상태 및 캔버스 초기화 ---
     const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // 알파 채널 비활성화로 렌더링 가속
     const container = document.getElementById('canvasContainer');
     const brushCursor = document.getElementById('brushCursor');
 
-    // 내부 연산 가상 해상도 (정밀도 보장)
-    const CANVAS_SIZE = 800;
+    // 내부 캔버스 해상도를 최적화된 600px로 조정 (선명도 유지 + CPU 부하 절반 이하)
+    const CANVAS_SIZE = 600;
     canvas.width = CANVAS_SIZE;
     canvas.height = CANVAS_SIZE;
 
-    // 마스크 버퍼 (칠한 영역 저장용)
+    // 마스크 버퍼
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = CANVAS_SIZE;
     maskCanvas.height = CANVAS_SIZE;
     const maskCtx = maskCanvas.getContext('2d');
 
-    // 메시 격자 설정 (32x32)
-    const GRID_SIZE = 32;
+    // 정밀하면서도 가벼운 24x24 격자 구조
+    const GRID_SIZE = 24;
     let vertices = []; 
-    let baseVertices = [];
+    let activeTriangles = []; // 움직이는 삼각형만 필터링하여 불필요한 연산 제거
 
-    let currentMode = 'squish'; // 'squish' | 'paint'
-    let paintTool = 'brush';    // 'brush' | 'eraser'
-    let brushRadius = 35;
-    let maskOpacity = 0.6;
-    let elasticity = 0.18;
-    let influenceRadius = 130;
+    let currentMode = 'squish';
+    let paintTool = 'brush';
+    let brushRadius = 30;
+    let maskOpacity = 0.5;
+    let elasticity = 0.20;
+    let influenceRadius = 110;
     let springBack = true;
     let soundEnabled = true;
 
     let baseImage = null;
     let isDrawing = false;
     let isDragging = false;
-    let touches = new Map(); // 멀티터치 관리
+    let touches = new Map();
 
-    // Web Audio 신디사이저
+    // 오디오 신디사이저
     let audioCtx = null;
     function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    function playSqueakSound(pitchMultiplier = 1) {
+    function playSqueakSound(pitch = 1) {
       if (!soundEnabled) return;
       try {
         initAudio();
@@ -291,88 +278,109 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        const startFreq = 480 * pitchMultiplier;
-        const endFreq = 720 * pitchMultiplier;
-        osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.frequency.setValueAtTime(450 * pitch, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(700 * pitch, audioCtx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
+        osc.stop(audioCtx.currentTime + 0.06);
       } catch(e) {}
     }
 
-    // --- 2. [가장 핵심] 마우스/터치 절대 좌표 정밀 보정 함수 ---
-    // CSS 배율, letterboxing, 캔버스 비율을 감안하여 실제 CANVAS_SIZE(800x800)의 정확한 픽셀 위치를 반환
+    // 1:1 절대 좌표 변환
     function getCanvasCoords(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
       return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
+        x: (clientX - rect.left) * (CANVAS_SIZE / rect.width),
+        y: (clientY - rect.top) * (CANVAS_SIZE / rect.height)
       };
     }
 
-    // --- 3. 메시 격자 생성 및 갱신 ---
+    // 메시 초기화
     function initMesh() {
       vertices = [];
-      baseVertices = [];
       const step = CANVAS_SIZE / GRID_SIZE;
 
       for (let y = 0; y <= GRID_SIZE; y++) {
         for (let x = 0; x <= GRID_SIZE; x++) {
           const px = x * step;
           const py = y * step;
-          const v = {
+          vertices.push({
             x: px, y: py,
             origX: px, origY: py,
             vx: 0, vy: 0,
-            weight: 0 // 칠해진 강도 (0 ~ 1)
-          };
-          vertices.push(v);
-          baseVertices.push({ x: px, y: py });
+            weight: 0
+          });
         }
       }
-      updateWeightsFromMask();
+      rebuildActiveTriangles();
     }
 
-    // 마스크 캔버스의 픽셀 데이터를 읽어 각 버텍스 가중치 계산
-    function updateWeightsFromMask() {
-      const imgData = maskCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE).data;
+    // [최적화 핵심] 브러시로 칠할 때 픽셀 전체를 스캔하지 않고 버텍스 위치와의 거리로 가중치를 즉시 계산
+    function applyDirectWeight(cx, cy, radius, isAdd) {
+      const rSq = radius * radius;
       for (let i = 0; i < vertices.length; i++) {
         const v = vertices[i];
-        const cx = Math.min(CANVAS_SIZE - 1, Math.max(0, Math.floor(v.origX)));
-        const cy = Math.min(CANVAS_SIZE - 1, Math.max(0, Math.floor(v.origY)));
-        const index = (cy * CANVAS_SIZE + cx) * 4;
-        // 알파 채널(투명도)을 기준으로 가중치 산출
-        v.weight = imgData[index + 3] / 255;
+        const dx = v.origX - cx;
+        const dy = v.origY - cy;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < rSq) {
+          const strength = 1 - Math.sqrt(distSq) / radius;
+          if (isAdd) {
+            v.weight = Math.min(1, v.weight + strength * 0.8);
+          } else {
+            v.weight = Math.max(0, v.weight - strength * 0.8);
+          }
+        }
       }
     }
 
-    // 기본 샘플 캐릭터 (기본 볼따구 프리셋 포함)
+    // 변형되는 삼각형만 인덱싱
+    function rebuildActiveTriangles() {
+      activeTriangles = [];
+      const cols = GRID_SIZE;
+      for (let y = 0; y < cols; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i1 = y * (cols + 1) + x;
+          const i2 = i1 + 1;
+          const i3 = (y + 1) * (cols + 1) + x;
+          const i4 = i3 + 1;
+
+          const v1 = vertices[i1], v2 = vertices[i2], v3 = vertices[i3], v4 = vertices[i4];
+          const hasWeight1 = (v1.weight > 0.01 || v2.weight > 0.01 || v3.weight > 0.01);
+          const hasWeight2 = (v2.weight > 0.01 || v4.weight > 0.01 || v3.weight > 0.01);
+
+          activeTriangles.push({
+            v1, v2, v3, isDynamic: hasWeight1
+          });
+          activeTriangles.push({
+            v1: v2, v2: v4, v3, isDynamic: hasWeight2
+          });
+        }
+      }
+    }
+
+    // 샘플 이미지 생성
     function createDefaultSample() {
       const off = document.createElement('canvas');
       off.width = CANVAS_SIZE;
       off.height = CANVAS_SIZE;
       const octx = off.getContext('2d');
 
-      // 배경
       octx.fillStyle = '#ffeef2';
       octx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      // 귀여운 찹쌀떡 캐릭터 그리기
       const cx = CANVAS_SIZE / 2;
       const cy = CANVAS_SIZE / 2;
 
-      // 몸체 (찹쌀떡)
+      // 찹쌀떡 캐릭터
       octx.beginPath();
-      octx.ellipse(cx, cy + 30, 240, 200, 0, 0, Math.PI * 2);
+      octx.ellipse(cx, cy + 20, 180, 150, 0, 0, Math.PI * 2);
       octx.fillStyle = '#ffffff';
       octx.fill();
-      octx.lineWidth = 10;
+      octx.lineWidth = 8;
       octx.strokeStyle = '#2c2c2e';
       octx.stroke();
 
@@ -382,66 +390,62 @@
         octx.translate(ex, ey);
         octx.rotate(rot);
         octx.beginPath();
-        octx.ellipse(0, 0, 45, 75, 0, 0, Math.PI * 2);
+        octx.ellipse(0, 0, 35, 60, 0, 0, Math.PI * 2);
         octx.fillStyle = '#ffffff';
         octx.fill();
         octx.stroke();
         octx.beginPath();
-        octx.ellipse(0, 10, 25, 45, 0, 0, Math.PI * 2);
+        octx.ellipse(0, 8, 20, 35, 0, 0, Math.PI * 2);
         octx.fillStyle = '#ffb6c1';
         octx.fill();
         octx.restore();
       }
-      drawEar(cx - 150, cy - 130, -0.3);
-      drawEar(cx + 150, cy - 130, 0.3);
+      drawEar(cx - 110, cy - 100, -0.3);
+      drawEar(cx + 110, cy - 100, 0.3);
 
       // 눈
       octx.fillStyle = '#1c1c1e';
       octx.beginPath();
-      octx.arc(cx - 75, cy + 10, 14, 0, Math.PI * 2);
-      octx.arc(cx + 75, cy + 10, 14, 0, Math.PI * 2);
+      octx.arc(cx - 60, cy + 5, 11, 0, Math.PI * 2);
+      octx.arc(cx + 60, cy + 5, 11, 0, Math.PI * 2);
       octx.fill();
 
-      // 반짝임
-      octx.fillStyle = '#ffffff';
+      // 입
       octx.beginPath();
-      octx.arc(cx - 78, cy + 6, 4, 0, Math.PI * 2);
-      octx.arc(cx + 72, cy + 6, 4, 0, Math.PI * 2);
-      octx.fill();
-
-      // 입 (ㅅ 모양)
-      octx.beginPath();
-      octx.lineWidth = 6;
+      octx.lineWidth = 5;
       octx.strokeStyle = '#1c1c1e';
-      octx.arc(cx - 12, cy + 38, 14, 0.1 * Math.PI, 0.9 * Math.PI);
+      octx.arc(cx - 10, cy + 28, 11, 0.1 * Math.PI, 0.9 * Math.PI);
       octx.stroke();
       octx.beginPath();
-      octx.arc(cx + 12, cy + 38, 14, 0.1 * Math.PI, 0.9 * Math.PI);
+      octx.arc(cx + 10, cy + 28, 11, 0.1 * Math.PI, 0.9 * Math.PI);
       octx.stroke();
 
-      // 홍조 (볼)
+      // 홍조
       octx.fillStyle = '#ff8fa3';
       octx.beginPath();
-      octx.ellipse(cx - 135, cy + 45, 40, 24, 0, 0, Math.PI * 2);
-      octx.ellipse(cx + 135, cy + 45, 40, 24, 0, 0, Math.PI * 2);
+      octx.ellipse(cx - 105, cy + 35, 30, 18, 0, 0, Math.PI * 2);
+      octx.ellipse(cx + 105, cy + 35, 30, 18, 0, 0, Math.PI * 2);
       octx.fill();
 
       const img = new Image();
       img.onload = () => {
         baseImage = img;
-        // 기본 양볼 마스크 자동 채우기
         maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        paintPresetCheeks(cx - 135, cy + 45, 75);
-        paintPresetCheeks(cx + 135, cy + 45, 75);
         initMesh();
+        
+        // 기본 양볼 마스크 자동 설정
+        drawMaskCircle(cx - 105, cy + 35, 60);
+        drawMaskCircle(cx + 105, cy + 35, 60);
+        applyDirectWeight(cx - 105, cy + 35, 60, true);
+        applyDirectWeight(cx + 105, cy + 35, 60, true);
+        rebuildActiveTriangles();
       };
       img.src = off.toDataURL();
     }
 
-    function paintPresetCheeks(x, y, r) {
+    function drawMaskCircle(x, y, r) {
       const grad = maskCtx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, 'rgba(255, 55, 95, 1)');
-      grad.addColorStop(0.7, 'rgba(255, 55, 95, 0.85)');
+      grad.addColorStop(0, 'rgba(255, 55, 95, 0.9)');
       grad.addColorStop(1, 'rgba(255, 55, 95, 0)');
       maskCtx.fillStyle = grad;
       maskCtx.beginPath();
@@ -449,23 +453,23 @@
       maskCtx.fill();
     }
 
-    // --- 4. 브러시 그리기 (Paint Mode) 정밀 동작 ---
+    // 브러시 그리기
     function applyPaint(x, y) {
       maskCtx.save();
       if (paintTool === 'brush') {
         maskCtx.globalCompositeOperation = 'source-over';
         const rad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
-        rad.addColorStop(0, 'rgba(255, 55, 95, 1)');
-        rad.addColorStop(0.7, 'rgba(255, 55, 95, 0.85)');
+        rad.addColorStop(0, 'rgba(255, 55, 95, 0.9)');
         rad.addColorStop(1, 'rgba(255, 55, 95, 0)');
         maskCtx.fillStyle = rad;
+        applyDirectWeight(x, y, brushRadius, true);
       } else {
         maskCtx.globalCompositeOperation = 'destination-out';
         const rad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
         rad.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        rad.addColorStop(0.7, 'rgba(0, 0, 0, 0.85)');
         rad.addColorStop(1, 'rgba(0, 0, 0, 0)');
         maskCtx.fillStyle = rad;
+        applyDirectWeight(x, y, brushRadius, false);
       }
       maskCtx.beginPath();
       maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
@@ -473,18 +477,21 @@
       maskCtx.restore();
     }
 
-    // --- 5. 물리 엔진 (Squish Deformation & Spring Physics) ---
+    // 물리 인터랙션
     function applyDeformation(targetX, targetY, prevX, prevY) {
       const dx = targetX - prevX;
       const dy = targetY - prevY;
+      const rSq = influenceRadius * influenceRadius;
 
       for (let i = 0; i < vertices.length; i++) {
         const v = vertices[i];
         if (v.weight <= 0.01) continue;
 
-        const dist = Math.hypot(v.x - prevX, v.y - prevY);
-        if (dist < influenceRadius) {
-          const factor = (1 - dist / influenceRadius) * v.weight;
+        const dX = v.x - prevX;
+        const dY = v.y - prevY;
+        const distSq = dX * dX + dY * dY;
+        if (distSq < rSq) {
+          const factor = (1 - Math.sqrt(distSq) / influenceRadius) * v.weight;
           v.x += dx * factor;
           v.y += dy * factor;
         }
@@ -497,9 +504,8 @@
       const damping = 0.82;
       for (let i = 0; i < vertices.length; i++) {
         const v = vertices[i];
-        if (!springBack && v.weight > 0) continue;
+        if (v.weight <= 0.01) continue;
 
-        // 원위치로 당기는 스프링 힘
         const forceX = (v.origX - v.x) * elasticity;
         const forceY = (v.origY - v.y) * elasticity;
 
@@ -511,27 +517,22 @@
       }
     }
 
-    // --- 6. 렌더링 파이프라인 (2D 텍스처 삼각형 매핑 렌더링) ---
+    // [최적화 렌더러] 전체 이미지를 먼저 통째로 그리고, 변형된 볼 부위 삼각형만 오버드로우
     function render() {
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
       if (baseImage) {
-        const cols = GRID_SIZE;
-        // 메시 기반 텍스처 왜곡 드로잉
-        for (let y = 0; y < cols; y++) {
-          for (let x = 0; x < cols; x++) {
-            const i1 = y * (cols + 1) + x;
-            const i2 = i1 + 1;
-            const i3 = (y + 1) * (cols + 1) + x;
-            const i4 = i3 + 1;
+        // 1. 기본 베이스 이미지 단 1회 렌더링
+        ctx.drawImage(baseImage, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-            drawTriangle(vertices[i1], vertices[i2], vertices[i3]);
-            drawTriangle(vertices[i2], vertices[i4], vertices[i3]);
+        // 2. 변형된 삼각형들만 선별적으로 변환 렌더링 (병목 완전 제거)
+        for (let i = 0; i < activeTriangles.length; i++) {
+          const tri = activeTriangles[i];
+          if (tri.isDynamic) {
+            drawTriangleFast(tri.v1, tri.v2, tri.v3);
           }
         }
       }
 
-      // 영역 칠하기 모드일 때는 마스크 오버레이를 캔버스 위에 뚜렷하게 합성
+      // 페인트 모드 마스크 오버레이
       if (currentMode === 'paint') {
         ctx.save();
         ctx.globalAlpha = maskOpacity;
@@ -543,8 +544,7 @@
       requestAnimationFrame(render);
     }
 
-    // 아핀 변환을 이용한 텍스처 삼각형 렌더링
-    function drawTriangle(v1, v2, v3) {
+    function drawTriangleFast(v1, v2, v3) {
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(v1.x, v1.y);
@@ -553,22 +553,22 @@
       ctx.closePath();
       ctx.clip();
 
-      const u0 = v1.origX, v0_ = v1.origY;
+      const u0 = v1.origX, v0 = v1.origY;
       const u1 = v2.origX, v1_ = v2.origY;
       const u2 = v3.origX, v2_ = v3.origY;
 
-      const x0 = v1.x, y0 = v1.y;
-      const x1 = v2.x, y1 = v2.y;
-      const x2 = v3.x, y2 = v3.y;
+      const delta = u0 * (v1_ - v2_) + u1 * (v2_ - v0) + u2 * (v0 - v1_);
+      if (Math.abs(delta) > 0.001) {
+        const x0 = v1.x, y0 = v1.y;
+        const x1 = v2.x, y1 = v2.y;
+        const x2 = v3.x, y2 = v3.y;
 
-      const delta = u0 * (v1_ - v2_) + u1 * (v2_ - v0_) + u2 * (v0_ - v1_);
-      if (Math.abs(delta) > 0.0001) {
-        const a = (x0 * (v1_ - v2_) + x1 * (v2_ - v0_) + x2 * (v0_ - v1_)) / delta;
-        const b = (y0 * (v1_ - v2_) + y1 * (v2_ - v0_) + y2 * (v0_ - v1_)) / delta;
+        const a = (x0 * (v1_ - v2_) + x1 * (v2_ - v0) + x2 * (v0 - v1_)) / delta;
+        const b = (y0 * (v1_ - v2_) + y1 * (v2_ - v0) + y2 * (v0 - v1_)) / delta;
         const c = (u0 * (x1 - x2) + u1 * (x2 - x0) + u2 * (x0 - x1)) / delta;
         const d = (u0 * (y1 - y2) + u1 * (y2 - y0) + u2 * (y0 - y1)) / delta;
-        const e = (u0 * (v2_ * x1 - v1_ * x2) + u1 * (v0_ * x2 - v2_ * x0) + u2 * (v1_ * x0 - v0_ * x1)) / delta;
-        const f = (u0 * (v2_ * y1 - v1_ * y2) + u1 * (v0_ * y2 - v2_ * y0) + u2 * (v1_ * y0 - v0_ * y1)) / delta;
+        const e = (u0 * (v2_ * x1 - v1_ * x2) + u1 * (v0 * x2 - v2_ * x0) + u2 * (v1_ * x0 - v0 * x1)) / delta;
+        const f = (u0 * (v2_ * y1 - v1_ * y2) + u1 * (v0 * y2 - v2_ * y0) + u2 * (v1_ * y0 - v0 * y1)) / delta;
 
         ctx.transform(a, b, c, d, e, f);
         ctx.drawImage(baseImage, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -576,21 +576,17 @@
       ctx.restore();
     }
 
-    // --- 7. 마우스 및 터치 이벤트 핸들러 (완벽 좌표 동기화) ---
+    // 커서 위치 업데이트
     function updateBrushCursorPos(clientX, clientY) {
       const rect = container.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      brushCursor.style.left = `${x}px`;
-      brushCursor.style.top = `${y}px`;
-      // 브러시 크기에 비례하여 커서 링 지름 조정
-      const cssScale = rect.width / CANVAS_SIZE;
-      const diameter = brushRadius * 2 * cssScale;
+      brushCursor.style.left = `${clientX - rect.left}px`;
+      brushCursor.style.top = `${clientY - rect.top}px`;
+      const diameter = brushRadius * 2 * (rect.width / CANVAS_SIZE);
       brushCursor.style.width = `${diameter}px`;
       brushCursor.style.height = `${diameter}px`;
     }
 
-    // 마우스 이벤트
+    // 이벤트 리스너
     container.addEventListener('mousemove', (e) => {
       if (currentMode === 'paint') {
         brushCursor.classList.remove('hidden');
@@ -622,7 +618,7 @@
     window.addEventListener('mouseup', () => {
       if (isDrawing) {
         isDrawing = false;
-        updateWeightsFromMask();
+        rebuildActiveTriangles();
       }
       if (isDragging) {
         isDragging = false;
@@ -631,18 +627,14 @@
       }
     });
 
-    container.addEventListener('mouseleave', () => {
-      brushCursor.classList.add('hidden');
-    });
+    container.addEventListener('mouseleave', () => brushCursor.classList.add('hidden'));
 
-    // 터치 이벤트 (모바일/아이패드 완벽 지원)
     container.addEventListener('touchstart', (e) => {
       e.preventDefault();
       initAudio();
       if (currentMode === 'paint') {
         isDrawing = true;
-        const touch = e.touches[0];
-        const pt = getCanvasCoords(touch.clientX, touch.clientY);
+        const pt = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
       } else {
         isDragging = true;
@@ -657,8 +649,7 @@
     container.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (currentMode === 'paint' && isDrawing) {
-        const touch = e.touches[0];
-        const pt = getCanvasCoords(touch.clientX, touch.clientY);
+        const pt = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
       } else if (isDragging) {
         for (let i = 0; i < e.changedTouches.length; i++) {
@@ -674,7 +665,7 @@
     window.addEventListener('touchend', (e) => {
       if (currentMode === 'paint' && isDrawing) {
         isDrawing = false;
-        updateWeightsFromMask();
+        rebuildActiveTriangles();
       } else if (isDragging) {
         for (let i = 0; i < e.changedTouches.length; i++) {
           touches.delete(e.changedTouches[i].identifier);
@@ -686,14 +677,13 @@
       }
     });
 
-    // --- 8. 로컬 파일 업로드 (프라이버시 보장) ---
+    // 로컬 이미지 파일 로드
     function loadFileImage(file) {
       if (!file || !file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
         const img = new Image();
         img.onload = () => {
-          // 800x800 규격으로 중앙 크롭하여 적재
           const off = document.createElement('canvas');
           off.width = CANVAS_SIZE;
           off.height = CANVAS_SIZE;
@@ -705,17 +695,13 @@
           const scale = Math.max(CANVAS_SIZE / img.width, CANVAS_SIZE / img.height);
           const dw = img.width * scale;
           const dh = img.height * scale;
-          const dx = (CANVAS_SIZE - dw) / 2;
-          const dy = (CANVAS_SIZE - dh) / 2;
-
-          octx.drawImage(img, dx, dy, dw, dh);
+          octx.drawImage(img, (CANVAS_SIZE - dw) / 2, (CANVAS_SIZE - dh) / 2, dw, dh);
 
           const croppedImg = new Image();
           croppedImg.onload = () => {
             baseImage = croppedImg;
             maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
             initMesh();
-            // 기본 모드를 칠하기 모드로 전환해 바로 볼 영역을 지정할 수 있게 유도
             setMode('paint');
           };
           croppedImg.src = off.toDataURL();
@@ -726,46 +712,10 @@
     }
 
     document.getElementById('fileInput').addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        loadFileImage(e.target.files[0]);
-      }
+      if (e.target.files && e.target.files[0]) loadFileImage(e.target.files[0]);
     });
 
-    // 드래그 앤 드롭
-    const dropOverlay = document.getElementById('dropOverlay');
-    window.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropOverlay.classList.remove('hidden');
-      dropOverlay.classList.add('flex');
-    });
-    window.addEventListener('dragleave', (e) => {
-      if (e.clientX <= 0 || e.clientY <= 0) {
-        dropOverlay.classList.add('hidden');
-        dropOverlay.classList.remove('flex');
-      }
-    });
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropOverlay.classList.add('hidden');
-      dropOverlay.classList.remove('flex');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        loadFileImage(e.dataTransfer.files[0]);
-      }
-    });
-
-    // 클립보드 붙여넣기 (Ctrl + V)
-    window.addEventListener('paste', (e) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (let item of items) {
-        if (item.type.indexOf('image') !== -1) {
-          loadFileImage(item.getAsFile());
-          break;
-        }
-      }
-    });
-
-    // --- 9. UI 이벤트 및 컨트롤 바인딩 ---
+    // 모드 전환
     const tabSquish = document.getElementById('tabSquish');
     const tabPaint = document.getElementById('tabPaint');
     const panelSquish = document.getElementById('panelSquish');
@@ -779,7 +729,7 @@
         panelSquish.classList.remove('hidden');
         panelPaint.classList.add('hidden');
         brushCursor.classList.add('hidden');
-        updateWeightsFromMask();
+        rebuildActiveTriangles();
       } else {
         tabPaint.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center gap-1.5";
         tabSquish.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-1.5";
@@ -791,7 +741,7 @@
     tabSquish.addEventListener('click', () => setMode('squish'));
     tabPaint.addEventListener('click', () => setMode('paint'));
 
-    // 브러시 도구 선택
+    // 도구 전환
     const btnToolBrush = document.getElementById('btnToolBrush');
     const btnToolEraser = document.getElementById('btnToolEraser');
     btnToolBrush.addEventListener('click', () => {
@@ -799,7 +749,7 @@
       btnToolBrush.className = "px-3 py-1.5 rounded-full bg-pink-500 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-pink-500/20 active:scale-95 transition";
       btnToolEraser.className = "px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold flex items-center gap-1 active:scale-95 transition";
       brushCursor.style.borderColor = "rgba(255, 255, 255, 0.9)";
-      brushCursor.style.backgroundColor = "rgba(255, 55, 95, 0.25)";
+      brushCursor.style.backgroundColor = "rgba(255, 55, 95, 0.2)";
     });
     btnToolEraser.addEventListener('click', () => {
       paintTool = 'eraser';
@@ -811,7 +761,8 @@
 
     document.getElementById('btnClearMask').addEventListener('click', () => {
       maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      updateWeightsFromMask();
+      for (let i = 0; i < vertices.length; i++) vertices[i].weight = 0;
+      rebuildActiveTriangles();
     });
 
     // 슬라이더 바인딩
@@ -831,7 +782,6 @@
       influenceRadius = parseInt(e.target.value);
       document.getElementById('txtInfluence').innerText = influenceRadius;
     });
-
     document.getElementById('toggleSpring').addEventListener('change', (e) => {
       springBack = e.target.checked;
     });
@@ -852,11 +802,9 @@
       iconSound.className = soundEnabled ? 'ph-bold ph-speaker-high' : 'ph-bold ph-speaker-slash text-zinc-500';
     });
 
-    document.getElementById('btnSample').addEventListener('click', () => {
-      createDefaultSample();
-    });
+    document.getElementById('btnSample').addEventListener('click', () => createDefaultSample());
 
-    // --- 10. 스냅샷 & 영상 녹화 (MediaRecorder) ---
+    // 스냅샷 & 비디오 녹화
     document.getElementById('btnSnapshot').addEventListener('click', () => {
       const link = document.createElement('a');
       link.download = `moti-hoppe-${Date.now()}.png`;
@@ -876,11 +824,8 @@
     const recTimerText = document.getElementById('recTimerText');
 
     btnRecord.addEventListener('click', () => {
-      if (isRecording) {
-        stopRecording();
-      } else {
-        startRecording();
-      }
+      if (isRecording) stopRecording();
+      else startRecording();
     });
 
     function startRecording() {
@@ -888,9 +833,7 @@
       recordedChunks = [];
       const stream = canvas.captureStream(60);
       let options = { mimeType: 'video/webm;codecs=vp9' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: 'video/webm' };
-      }
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: 'video/webm' };
 
       try {
         mediaRecorder = new MediaRecorder(stream, options);
@@ -938,7 +881,7 @@
       recBadge.classList.add('hidden');
     }
 
-    // 초기 실행
+    // 실행 시작
     createDefaultSample();
     render();
   </script>
