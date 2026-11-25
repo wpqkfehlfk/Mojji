@@ -226,7 +226,7 @@
     </div>
   </section>
 
-  <!-- WebGL 셰이더 및 핵심 로직 -->
+  <!-- WebGL 셰이더 및 핵심 제어 스크립트 -->
   <script>
     const CANVAS_SIZE = 720;
     const glCanvas = document.getElementById('glCanvas');
@@ -359,8 +359,10 @@
     let soundEnabled = true;
 
     let isDrawing = false;
-    let isDragging = false;
-    let touches = new Map();
+    
+    // [핵심 구조 변경] 각 손가락/마우스 포인터의 시작점(start)과 현재점(curr)을 관리하는 앵커 맵
+    // touches = Map<id, { startX, startY, currX, currY }>
+    const pointerAnchors = new Map();
 
     // 오디오 신디사이저
     let audioCtx = null;
@@ -446,60 +448,80 @@
       updateOverlay();
     }
 
-    // [핵심 변경] 당길 때 정점에 가해진 변위가 사라지지 않고 유지됨
-    function applyDeformation(targetX, targetY, prevX, prevY) {
-      const dxNorm = ((targetX - prevX) / CANVAS_SIZE) * 2.0;
-      const dyNorm = -((targetY - prevY) / CANVAS_SIZE) * 2.0;
-      const rSq = influenceRadius * influenceRadius;
+    // [핵심] 사용자가 잡고 있는 동안에는 마우스/손가락 위치에 비례하여 100% 견고하게 고정(Pin) 유지
+    // 마우스를 멈추고 몇 분 동안 가만히 있어도 절대 풀리지 않습니다.
+    function updateDeformationAndPhysics() {
+      const isHolding = pointerAnchors.size > 0;
 
-      for (let i = 0; i < numVertices; i++) {
-        const w = weightArray[i];
-        if (w <= 0.01) continue;
+      if (isHolding) {
+        // 1. 잡고 있는 동안: 각 버텍스의 목표 위치를 손가락 앵커 위치로 직접 고정
+        const rSq = influenceRadius * influenceRadius;
 
-        const u = uvArray[i * 2];
-        const v = uvArray[i * 2 + 1];
-        const px = u * CANVAS_SIZE;
-        const py = v * CANVAS_SIZE;
+        for (let i = 0; i < numVertices; i++) {
+          const w = weightArray[i];
+          const i2 = i * 2;
+          if (w <= 0.01) {
+            posArray[i2] = origPosArray[i2];
+            posArray[i2 + 1] = origPosArray[i2 + 1];
+            velArray[i2] = 0;
+            velArray[i2 + 1] = 0;
+            continue;
+          }
 
-        const distSq = (px - prevX) * (px - prevX) + (py - prevY) * (py - prevY);
-        if (distSq < rSq) {
-          const factor = (1.0 - Math.sqrt(distSq) / influenceRadius) * w;
-          posArray[i * 2] += dxNorm * factor;
-          posArray[i * 2 + 1] += dyNorm * factor;
-          // 드래그 중인 동안에는 복귀 속도 벡터 초기화
-          velArray[i * 2] = 0;
-          velArray[i * 2 + 1] = 0;
+          const u = uvArray[i2];
+          const v = uvArray[i2 + 1];
+          const px = u * CANVAS_SIZE;
+          const py = v * CANVAS_SIZE;
+
+          let totalOffsetNormX = 0;
+          let totalOffsetNormY = 0;
+
+          // 모든 활성 터치/마우스로부터의 변위 누적
+          for (let anchor of pointerAnchors.values()) {
+            const dxAnchor = anchor.currX - anchor.startX;
+            const dyAnchor = anchor.currY - anchor.startY;
+
+            const distSq = (px - anchor.startX) * (px - anchor.startX) + (py - anchor.startY) * (py - anchor.startY);
+            if (distSq < rSq) {
+              const factor = (1.0 - Math.sqrt(distSq) / influenceRadius) * w;
+              totalOffsetNormX += (dxAnchor / CANVAS_SIZE) * 2.0 * factor;
+              totalOffsetNormY += (-dyAnchor / CANVAS_SIZE) * 2.0 * factor;
+            }
+          }
+
+          // 시작 원래 위치 + 누적 변위 = 잡고 있는 동안 미동도 없이 완벽 고정
+          posArray[i2] = origPosArray[i2] + totalOffsetNormX;
+          posArray[i2 + 1] = origPosArray[i2 + 1] + totalOffsetNormY;
+
+          // 잡고 있는 동안에는 속도 누적 방지 (손을 뗄 때 자연스럽게 튕겨가도록 0 유지)
+          velArray[i2] = 0;
+          velArray[i2 + 1] = 0;
+        }
+      } else if (springBack) {
+        // 2. 손을 완전히 놓았을 때: 그 순간부터 탄성 스프링 물리 엔진 작동하여 복귀
+        const damping = 0.82;
+        for (let i = 0; i < numVertices; i++) {
+          const w = weightArray[i];
+          if (w <= 0.01) continue;
+
+          const i2 = i * 2;
+          const origX = origPosArray[i2];
+          const origY = origPosArray[i2 + 1];
+
+          const fx = (origX - posArray[i2]) * elasticity;
+          const fy = (origY - posArray[i2 + 1]) * elasticity;
+
+          velArray[i2] = (velArray[i2] + fx) * damping;
+          velArray[i2 + 1] = (velArray[i2 + 1] + fy) * damping;
+
+          posArray[i2] += velArray[i2];
+          posArray[i2 + 1] += velArray[i2 + 1];
         }
       }
     }
 
-    // [핵심 변경] 사용자가 잡고 있는 동안(isDragging = true)에는 절대 복귀하지 않음!
-    // 손을 완전히 떼었을 때만(isDragging = false) 스프링 물리로 원위치 복귀
-    function updatePhysics() {
-      if (isDragging || !springBack) return;
-
-      const damping = 0.82;
-      for (let i = 0; i < numVertices; i++) {
-        const w = weightArray[i];
-        if (w <= 0.01) continue;
-
-        const i2 = i * 2;
-        const origX = origPosArray[i2];
-        const origY = origPosArray[i2 + 1];
-
-        const fx = (origX - posArray[i2]) * elasticity;
-        const fy = (origY - posArray[i2 + 1]) * elasticity;
-
-        velArray[i2] = (velArray[i2] + fx) * damping;
-        velArray[i2 + 1] = (velArray[i2 + 1] + fy) * damping;
-
-        posArray[i2] += velArray[i2];
-        posArray[i2 + 1] += velArray[i2 + 1];
-      }
-    }
-
     function render() {
-      updatePhysics();
+      updateDeformationAndPhysics();
 
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, posArray);
@@ -600,6 +622,7 @@
     }
 
     function resetMeshPositions() {
+      pointerAnchors.clear();
       for (let i = 0; i < numVertices * 2; i++) {
         posArray[i] = origPosArray[i];
         velArray[i] = 0;
@@ -615,7 +638,24 @@
       brushCursor.style.height = `${diam}px`;
     }
 
-    // 마우스 이벤트 바인딩
+    // 마우스 이벤트 (완벽한 앵커 유지)
+    container.addEventListener('mousedown', (e) => {
+      const pt = getCoords(e.clientX, e.clientY);
+      if (currentMode === 'paint') {
+        isDrawing = true;
+        applyPaint(pt.x, pt.y);
+      } else {
+        // 최초 클릭 지점과 현재 지점을 동일하게 설정하여 앵커 고정 시작
+        pointerAnchors.set('mouse', {
+          startX: pt.x,
+          startY: pt.y,
+          currX: pt.x,
+          currY: pt.y
+        });
+        playSqueak(1.15);
+      }
+    });
+
     container.addEventListener('mousemove', (e) => {
       if (currentMode === 'paint') {
         brushCursor.classList.remove('hidden');
@@ -624,38 +664,25 @@
           const pt = getCoords(e.clientX, e.clientY);
           applyPaint(pt.x, pt.y);
         }
-      } else if (isDragging) {
+      } else if (pointerAnchors.has('mouse')) {
         const pt = getCoords(e.clientX, e.clientY);
-        const last = touches.get('mouse') || pt;
-        applyDeformation(pt.x, pt.y, last.x, last.y);
-        touches.set('mouse', pt);
-      }
-    });
-
-    container.addEventListener('mousedown', (e) => {
-      const pt = getCoords(e.clientX, e.clientY);
-      if (currentMode === 'paint') {
-        isDrawing = true;
-        applyPaint(pt.x, pt.y);
-      } else {
-        isDragging = true;
-        touches.set('mouse', pt);
-        playSqueak(1.15);
+        const anchor = pointerAnchors.get('mouse');
+        anchor.currX = pt.x;
+        anchor.currY = pt.y;
       }
     });
 
     window.addEventListener('mouseup', () => {
       if (isDrawing) isDrawing = false;
-      if (isDragging) {
-        isDragging = false;
-        touches.delete('mouse');
+      if (pointerAnchors.has('mouse')) {
+        pointerAnchors.delete('mouse');
         playSqueak(0.9);
       }
     });
 
     container.addEventListener('mouseleave', () => brushCursor.classList.add('hidden'));
 
-    // 멀티터치 바인딩
+    // 멀티터치 이벤트 (완벽한 앵커 유지)
     container.addEventListener('touchstart', (e) => {
       e.preventDefault();
       initAudio();
@@ -664,11 +691,16 @@
         const pt = getCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
       } else {
-        isDragging = true;
         playSqueak(1.15);
         for (let i = 0; i < e.changedTouches.length; i++) {
           const t = e.changedTouches[i];
-          touches.set(t.identifier, getCoords(t.clientX, t.clientY));
+          const pt = getCoords(t.clientX, t.clientY);
+          pointerAnchors.set(t.identifier, {
+            startX: pt.x,
+            startY: pt.y,
+            currX: pt.x,
+            currY: pt.y
+          });
         }
       }
     }, { passive: false });
@@ -678,25 +710,26 @@
       if (currentMode === 'paint' && isDrawing) {
         const pt = getCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
-      } else if (isDragging) {
+      } else {
         for (let i = 0; i < e.changedTouches.length; i++) {
           const t = e.changedTouches[i];
-          const pt = getCoords(t.clientX, t.clientY);
-          const last = touches.get(t.identifier) || pt;
-          applyDeformation(pt.x, pt.y, last.x, last.y);
-          touches.set(t.identifier, pt);
+          if (pointerAnchors.has(t.identifier)) {
+            const pt = getCoords(t.clientX, t.clientY);
+            const anchor = pointerAnchors.get(t.identifier);
+            anchor.currX = pt.x;
+            anchor.currY = pt.y;
+          }
         }
       }
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
       if (currentMode === 'paint' && isDrawing) isDrawing = false;
-      else if (isDragging) {
+      else {
         for (let i = 0; i < e.changedTouches.length; i++) {
-          touches.delete(e.changedTouches[i].identifier);
+          pointerAnchors.delete(e.changedTouches[i].identifier);
         }
-        if (touches.size === 0) {
-          isDragging = false;
+        if (pointerAnchors.size === 0) {
           playSqueak(0.9);
         }
       }
