@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Moti Hoppe Maker - 모찌 볼따구 메이커</title>
+  <title>Moti Hoppe Maker - GPU WebGL 모찌 볼따구 메이커</title>
   
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -21,7 +21,7 @@
       color: #f5f5f7;
     }
     .glass-panel {
-      background: rgba(28, 28, 30, 0.78);
+      background: rgba(28, 28, 30, 0.8);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -72,9 +72,9 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 pb-12 selection:bg-pink-500/30">
+<body class="min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 pb-12">
 
-  <!-- 상단 네비게이션 헤더 -->
+  <!-- 헤더 -->
   <header class="w-full max-w-xl flex items-center justify-between py-2 px-1 mb-2">
     <div class="flex items-center gap-2.5">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center shadow-lg shadow-pink-500/25">
@@ -83,9 +83,9 @@
       <div>
         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
           Moti Hoppe Maker
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">60FPS 가속</span>
+          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">GPU 가속</span>
         </h1>
-        <p class="text-[11px] text-zinc-400 font-medium leading-none mt-0.5">로컬 온디바이스 & 경량 렌더링</p>
+        <p class="text-[11px] text-zinc-400 font-medium leading-none mt-0.5">WebGL 무지연 렌더링 & 100% 로컬 처리</p>
       </div>
     </div>
     
@@ -94,7 +94,7 @@
     </button>
   </header>
 
-  <!-- 모드 전환 탭 세그먼트 -->
+  <!-- 탭 세그먼트 -->
   <div class="w-full max-w-xl p-1 bg-zinc-900/90 rounded-2xl border border-zinc-800 flex mb-3">
     <button id="tabSquish" class="flex-1 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 bg-zinc-800 text-white shadow">
       <i class="ph-bold ph-hand-grabbing text-pink-400 text-base"></i> 볼따구 당기기
@@ -104,20 +104,18 @@
     </button>
   </div>
 
-  <!-- 메인 캔버스 뷰 -->
+  <!-- 메인 캔버스 -->
   <main class="w-full max-w-xl flex-1 flex flex-col items-center justify-center relative">
     <div id="canvasContainer" class="w-full aspect-square max-h-[70vh] bg-zinc-950 rounded-[32px] overflow-hidden relative shadow-2xl border border-zinc-800/80 flex items-center justify-center cursor-crosshair">
       
-      <canvas id="mainCanvas" class="w-full h-full object-contain block"></canvas>
+      <!-- GPU WebGL 캔버스 -->
+      <canvas id="glCanvas" class="w-full h-full object-contain block"></canvas>
+
+      <!-- 마스크 시각화 오버레이 캔버스 (칠하기 모드 전용) -->
+      <canvas id="overlayCanvas" class="w-full h-full object-contain block absolute inset-0 pointer-events-none hidden"></canvas>
 
       <!-- 브러시 링 커서 -->
       <div id="brushCursor" class="pointer-events-none absolute w-10 h-10 rounded-full border-2 border-white/80 bg-pink-500/20 shadow-lg -translate-x-1/2 -translate-y-1/2 hidden z-20"></div>
-
-      <!-- 드래그 & 드롭 오버레이 -->
-      <div id="dropOverlay" class="absolute inset-0 bg-pink-500/20 backdrop-blur-sm border-2 border-dashed border-pink-400 rounded-[32px] hidden items-center justify-center flex-col gap-2 z-30 pointer-events-none">
-        <i class="ph-duotone ph-image-square text-5xl text-pink-300 animate-bounce"></i>
-        <p class="text-sm font-semibold text-white">이미지를 여기에 놓으세요</p>
-      </div>
 
       <!-- 녹화 인디케이터 -->
       <div id="recBadge" class="absolute top-4 left-4 px-3 py-1 bg-rose-600/90 backdrop-blur-md rounded-full text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg hidden z-20 animate-pulse">
@@ -130,22 +128,22 @@
   <!-- 컨트롤 패널 -->
   <section class="w-full max-w-xl mt-3 space-y-3">
     
-    <!-- 볼따구 당기기 패널 -->
+    <!-- 당기기 패널 -->
     <div id="panelSquish" class="glass-panel rounded-3xl p-4 space-y-3.5">
       <div class="grid grid-cols-2 gap-3">
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
-            <span>볼 탄성 (복귀력)</span>
-            <span id="txtElasticity" class="text-pink-400 font-mono">0.20</span>
+            <span>볼 탄성 (복귀 속도)</span>
+            <span id="txtElasticity" class="text-pink-400 font-mono">0.22</span>
           </div>
-          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.20" class="ios-slider w-full">
+          <input id="sliderElasticity" type="range" min="0.05" max="0.45" step="0.01" value="0.22" class="ios-slider w-full">
         </div>
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
-            <span>영향 반경 (늘어남)</span>
-            <span id="txtInfluence" class="text-pink-400 font-mono">110</span>
+            <span>영향 반경 (늘어나는 폭)</span>
+            <span id="txtInfluence" class="text-pink-400 font-mono">140</span>
           </div>
-          <input id="sliderInfluence" type="range" min="50" max="200" step="5" value="110" class="ios-slider w-full">
+          <input id="sliderInfluence" type="range" min="60" max="250" step="5" value="140" class="ios-slider w-full">
         </div>
       </div>
 
@@ -155,7 +153,7 @@
             <input id="toggleSpring" type="checkbox" checked>
             <span class="slider-toggle"></span>
           </label>
-          <span class="text-xs font-semibold text-zinc-200">손 놓으면 복귀</span>
+          <span class="text-xs font-semibold text-zinc-200">손 놓으면 원상복귀</span>
         </div>
         
         <div class="flex items-center gap-2">
@@ -163,7 +161,7 @@
             <i id="iconSound" class="ph-bold ph-speaker-high"></i>
           </button>
           <button id="btnResetPhysics" class="px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition text-xs font-semibold text-zinc-300">
-            원래대로
+            원래대로 정렬
           </button>
         </div>
       </div>
@@ -178,7 +176,7 @@
       </div>
     </div>
 
-    <!-- 영역 칠하기 패널 -->
+    <!-- 칠하기 패널 -->
     <div id="panelPaint" class="glass-panel rounded-3xl p-4 space-y-3.5 hidden">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -198,79 +196,183 @@
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>브러시 크기</span>
-            <span id="txtBrushRadius" class="text-pink-400 font-mono">30px</span>
+            <span id="txtBrushRadius" class="text-pink-400 font-mono">35px</span>
           </div>
-          <input id="sliderBrushRadius" type="range" min="10" max="80" step="2" value="30" class="ios-slider w-full">
+          <input id="sliderBrushRadius" type="range" min="10" max="90" step="2" value="35" class="ios-slider w-full">
         </div>
         <div>
           <div class="flex justify-between text-xs font-semibold text-zinc-300 mb-1.5">
             <span>마스크 투명도</span>
-            <span id="txtMaskOpacity" class="text-pink-400 font-mono">50%</span>
+            <span id="txtMaskOpacity" class="text-pink-400 font-mono">60%</span>
           </div>
-          <input id="sliderMaskOpacity" type="range" min="20" max="90" step="5" value="50" class="ios-slider w-full">
+          <input id="sliderMaskOpacity" type="range" min="20" max="90" step="5" value="60" class="ios-slider w-full">
         </div>
       </div>
 
       <p class="text-[11px] text-zinc-400 text-center bg-zinc-900/60 py-2 px-3 rounded-xl border border-zinc-800">
-        늘어나길 원하는 <b>양 볼</b> 부위를 분홍색으로 칠해주세요.
+        늘이고 싶은 <b>볼 부분</b>을 칠해주세요. (눈과 코를 제외하고 칠하면 볼만 깔끔하게 당겨집니다)
       </p>
     </div>
 
-    <!-- 파일 열기 & 상태 -->
+    <!-- 파일 선택 -->
     <div class="flex items-center justify-between px-2 pt-1 text-xs">
       <label class="cursor-pointer text-pink-400 hover:text-pink-300 font-semibold flex items-center gap-1.5 py-1">
-        <i class="ph-bold ph-folder-open text-base"></i> 사진 파일 열기
+        <i class="ph-bold ph-folder-open text-base"></i> 내 기기에서 사진 열기
         <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden">
       </label>
       <span class="text-zinc-500 text-[11px] flex items-center gap-1">
-        <i class="ph-bold ph-shield-check text-emerald-400 text-sm"></i> 로컬 메모리 보장
+        <i class="ph-bold ph-shield-check text-emerald-400 text-sm"></i> 서버 업로드 없는 안전한 로컬 처리
       </span>
     </div>
   </section>
 
-  <!-- 최적화 스크립트 -->
+  <!-- WebGL 셰이더 및 로직 -->
   <script>
-    const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d', { alpha: false }); // 알파 채널 비활성화로 렌더링 가속
+    const CANVAS_SIZE = 720;
+    const glCanvas = document.getElementById('glCanvas');
+    glCanvas.width = CANVAS_SIZE;
+    glCanvas.height = CANVAS_SIZE;
+    const gl = glCanvas.getContext('webgl', { preserveDrawingBuffer: true, alpha: false });
+
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    overlayCanvas.width = CANVAS_SIZE;
+    overlayCanvas.height = CANVAS_SIZE;
+    const overlayCtx = overlayCanvas.getContext('2d');
+
     const container = document.getElementById('canvasContainer');
     const brushCursor = document.getElementById('brushCursor');
 
-    // 내부 캔버스 해상도를 최적화된 600px로 조정 (선명도 유지 + CPU 부하 절반 이하)
-    const CANVAS_SIZE = 600;
-    canvas.width = CANVAS_SIZE;
-    canvas.height = CANVAS_SIZE;
-
-    // 마스크 버퍼
+    // 마스크 버퍼 (볼 영역 가중치)
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = CANVAS_SIZE;
     maskCanvas.height = CANVAS_SIZE;
     const maskCtx = maskCanvas.getContext('2d');
 
-    // 정밀하면서도 가벼운 24x24 격자 구조
-    const GRID_SIZE = 24;
-    let vertices = []; 
-    let activeTriangles = []; // 움직이는 삼각형만 필터링하여 불필요한 연산 제거
+    // WebGL 메시: 50x50 촘촘한 정밀 메시 (GPU이므로 수천 개여도 0ms 지연)
+    const GRID = 50;
+    const numVertices = (GRID + 1) * (GRID + 1);
+    const posArray = new Float32Array(numVertices * 2);
+    const origPosArray = new Float32Array(numVertices * 2);
+    const uvArray = new Float32Array(numVertices * 2);
+    const weightArray = new Float32Array(numVertices);
+    const velArray = new Float32Array(numVertices * 2);
+
+    // 격자 좌표 & UV 세팅
+    let idx = 0;
+    for (let y = 0; y <= GRID; y++) {
+      for (let x = 0; x <= GRID; x++) {
+        const u = x / GRID;
+        const v = y / GRID;
+        const px = u * 2.0 - 1.0;
+        const py = 1.0 - v * 2.0;
+
+        posArray[idx * 2] = px;
+        posArray[idx * 2 + 1] = py;
+        origPosArray[idx * 2] = px;
+        origPosArray[idx * 2 + 1] = py;
+
+        uvArray[idx * 2] = u;
+        uvArray[idx * 2 + 1] = v;
+        weightArray[idx] = 0;
+        velArray[idx * 2] = 0;
+        velArray[idx * 2 + 1] = 0;
+        idx++;
+      }
+    }
+
+    // 삼각형 인덱스 생성 (구멍이나 찢어짐 없는 견고한 인덱스 버퍼)
+    const indices = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        const i1 = y * (GRID + 1) + x;
+        const i2 = i1 + 1;
+        const i3 = (y + 1) * (GRID + 1) + x;
+        const i4 = i3 + 1;
+
+        indices.push(i1, i3, i2);
+        indices.push(i2, i3, i4);
+      }
+    }
+    const indexArray = new Uint16Array(indices);
+
+    // WebGL 셰이더 소스
+    const vsSource = `
+      attribute vec2 a_position;
+      attribute vec2 a_uv;
+      varying vec2 v_uv;
+      void main() {
+        gl_Position = vec4(a_position, 0.0, 1.0);
+        v_uv = a_uv;
+      }
+    `;
+    const fsSource = `
+      precision mediump float;
+      uniform sampler2D u_image;
+      varying vec2 v_uv;
+      void main() {
+        gl_FragColor = texture2D(u_image, v_uv);
+      }
+    `;
+
+    function compileShader(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
+    gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const aPosLoc = gl.getAttribLocation(prog, 'a_position');
+    const aUvLoc = gl.getAttribLocation(prog, 'a_uv');
+
+    // 버퍼 바인딩
+    const posBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, posArray, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(aPosLoc);
+    gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const uvBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, uvArray, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(aUvLoc);
+    gl.vertexAttribPointer(aUvLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+
+    // 텍스처
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
     let currentMode = 'squish';
     let paintTool = 'brush';
-    let brushRadius = 30;
-    let maskOpacity = 0.5;
-    let elasticity = 0.20;
-    let influenceRadius = 110;
+    let brushRadius = 35;
+    let maskOpacity = 0.6;
+    let elasticity = 0.22;
+    let influenceRadius = 140;
     let springBack = true;
     let soundEnabled = true;
 
-    let baseImage = null;
     let isDrawing = false;
     let isDragging = false;
     let touches = new Map();
 
-    // 오디오 신디사이저
+    // 신디사이저 사운드
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    function playSqueakSound(pitch = 1) {
+    function playSqueak(pitch = 1) {
       if (!soundEnabled) return;
       try {
         initAudio();
@@ -289,81 +391,139 @@
       } catch(e) {}
     }
 
-    // 1:1 절대 좌표 변환
-    function getCanvasCoords(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
+    // 마우스/터치 절대 좌표 계산
+    function getCoords(clientX, clientY) {
+      const rect = glCanvas.getBoundingClientRect();
       return {
         x: (clientX - rect.left) * (CANVAS_SIZE / rect.width),
         y: (clientY - rect.top) * (CANVAS_SIZE / rect.height)
       };
     }
 
-    // 메시 초기화
-    function initMesh() {
-      vertices = [];
-      const step = CANVAS_SIZE / GRID_SIZE;
-
-      for (let y = 0; y <= GRID_SIZE; y++) {
-        for (let x = 0; x <= GRID_SIZE; x++) {
-          const px = x * step;
-          const py = y * step;
-          vertices.push({
-            x: px, y: py,
-            origX: px, origY: py,
-            vx: 0, vy: 0,
-            weight: 0
-          });
-        }
-      }
-      rebuildActiveTriangles();
-    }
-
-    // [최적화 핵심] 브러시로 칠할 때 픽셀 전체를 스캔하지 않고 버텍스 위치와의 거리로 가중치를 즉시 계산
+    // 가중치 업데이트 (수학적 원형 분포)
     function applyDirectWeight(cx, cy, radius, isAdd) {
       const rSq = radius * radius;
-      for (let i = 0; i < vertices.length; i++) {
-        const v = vertices[i];
-        const dx = v.origX - cx;
-        const dy = v.origY - cy;
+      for (let i = 0; i < numVertices; i++) {
+        const u = uvArray[i * 2];
+        const v = uvArray[i * 2 + 1];
+        const px = u * CANVAS_SIZE;
+        const py = v * CANVAS_SIZE;
+
+        const dx = px - cx;
+        const dy = py - cy;
         const distSq = dx * dx + dy * dy;
         if (distSq < rSq) {
-          const strength = 1 - Math.sqrt(distSq) / radius;
+          const strength = (1 - Math.sqrt(distSq) / radius);
           if (isAdd) {
-            v.weight = Math.min(1, v.weight + strength * 0.8);
+            weightArray[i] = Math.min(1.0, weightArray[i] + strength * 0.7);
           } else {
-            v.weight = Math.max(0, v.weight - strength * 0.8);
+            weightArray[i] = Math.max(0.0, weightArray[i] - strength * 0.7);
           }
         }
       }
     }
 
-    // 변형되는 삼각형만 인덱싱
-    function rebuildActiveTriangles() {
-      activeTriangles = [];
-      const cols = GRID_SIZE;
-      for (let y = 0; y < cols; y++) {
-        for (let x = 0; x < cols; x++) {
-          const i1 = y * (cols + 1) + x;
-          const i2 = i1 + 1;
-          const i3 = (y + 1) * (cols + 1) + x;
-          const i4 = i3 + 1;
+    // 마스크 오버레이 다시 그리기
+    function updateOverlay() {
+      overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      overlayCtx.globalAlpha = maskOpacity;
+      overlayCtx.drawImage(maskCanvas, 0, 0);
+    }
 
-          const v1 = vertices[i1], v2 = vertices[i2], v3 = vertices[i3], v4 = vertices[i4];
-          const hasWeight1 = (v1.weight > 0.01 || v2.weight > 0.01 || v3.weight > 0.01);
-          const hasWeight2 = (v2.weight > 0.01 || v4.weight > 0.01 || v3.weight > 0.01);
+    function applyPaint(x, y) {
+      maskCtx.save();
+      if (paintTool === 'brush') {
+        maskCtx.globalCompositeOperation = 'source-over';
+        const grad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
+        grad.addColorStop(0, 'rgba(255, 55, 95, 0.85)');
+        grad.addColorStop(1, 'rgba(255, 55, 95, 0)');
+        maskCtx.fillStyle = grad;
+        applyDirectWeight(x, y, brushRadius, true);
+      } else {
+        maskCtx.globalCompositeOperation = 'destination-out';
+        const grad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        maskCtx.fillStyle = grad;
+        applyDirectWeight(x, y, brushRadius, false);
+      }
+      maskCtx.beginPath();
+      maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
+      maskCtx.fill();
+      maskCtx.restore();
+      updateOverlay();
+    }
 
-          activeTriangles.push({
-            v1, v2, v3, isDynamic: hasWeight1
-          });
-          activeTriangles.push({
-            v1: v2, v2: v4, v3, isDynamic: hasWeight2
-          });
+    // 찰진 볼 변형 (GPU 버퍼에 직접 기록)
+    function applyDeformation(targetX, targetY, prevX, prevY) {
+      const dxNorm = ((targetX - prevX) / CANVAS_SIZE) * 2.0;
+      const dyNorm = -((targetY - prevY) / CANVAS_SIZE) * 2.0;
+      const rSq = influenceRadius * influenceRadius;
+
+      for (let i = 0; i < numVertices; i++) {
+        const w = weightArray[i];
+        if (w <= 0.01) continue;
+
+        const u = uvArray[i * 2];
+        const v = uvArray[i * 2 + 1];
+        const px = u * CANVAS_SIZE;
+        const py = v * CANVAS_SIZE;
+
+        const distSq = (px - prevX) * (px - prevX) + (py - prevY) * (py - prevY);
+        if (distSq < rSq) {
+          const factor = (1.0 - Math.sqrt(distSq) / influenceRadius) * w;
+          posArray[i * 2] += dxNorm * factor;
+          posArray[i * 2 + 1] += dyNorm * factor;
         }
       }
     }
 
-    // 샘플 이미지 생성
-    function createDefaultSample() {
+    // 탄성 스프링 복귀
+    function updatePhysics() {
+      if (!springBack && isDragging) return;
+
+      const damping = 0.84;
+      for (let i = 0; i < numVertices; i++) {
+        const w = weightArray[i];
+        if (w <= 0.01) continue;
+
+        const i2 = i * 2;
+        const origX = origPosArray[i2];
+        const origY = origPosArray[i2 + 1];
+
+        const fx = (origX - posArray[i2]) * elasticity;
+        const fy = (origY - posArray[i2 + 1]) * elasticity;
+
+        velArray[i2] = (velArray[i2] + fx) * damping;
+        velArray[i2 + 1] = (velArray[i2 + 1] + fy) * damping;
+
+        posArray[i2] += velArray[i2];
+        posArray[i2 + 1] += velArray[i2 + 1];
+      }
+    }
+
+    // WebGL 메인 렌더 루프 (60FPS 초고속 하드웨어 렌더링)
+    function render() {
+      updatePhysics();
+
+      // GPU 정점 버퍼 업로드 (순식간에 처리)
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, posArray);
+
+      gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+
+      requestAnimationFrame(render);
+    }
+
+    // 텍스처 업로드
+    function updateGLTexture(img) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    }
+
+    // 기본 샘플 캐릭터 생성
+    function loadSampleImage() {
       const off = document.createElement('canvas');
       off.width = CANVAS_SIZE;
       off.height = CANVAS_SIZE;
@@ -377,226 +537,106 @@
 
       // 찹쌀떡 캐릭터
       octx.beginPath();
-      octx.ellipse(cx, cy + 20, 180, 150, 0, 0, Math.PI * 2);
+      octx.ellipse(cx, cy + 20, 220, 180, 0, 0, Math.PI * 2);
       octx.fillStyle = '#ffffff';
       octx.fill();
-      octx.lineWidth = 8;
+      octx.lineWidth = 10;
       octx.strokeStyle = '#2c2c2e';
       octx.stroke();
 
-      // 귀
       function drawEar(ex, ey, rot) {
         octx.save();
         octx.translate(ex, ey);
         octx.rotate(rot);
         octx.beginPath();
-        octx.ellipse(0, 0, 35, 60, 0, 0, Math.PI * 2);
+        octx.ellipse(0, 0, 40, 70, 0, 0, Math.PI * 2);
         octx.fillStyle = '#ffffff';
         octx.fill();
         octx.stroke();
         octx.beginPath();
-        octx.ellipse(0, 8, 20, 35, 0, 0, Math.PI * 2);
+        octx.ellipse(0, 10, 22, 40, 0, 0, Math.PI * 2);
         octx.fillStyle = '#ffb6c1';
         octx.fill();
         octx.restore();
       }
-      drawEar(cx - 110, cy - 100, -0.3);
-      drawEar(cx + 110, cy - 100, 0.3);
+      drawEar(cx - 130, cy - 120, -0.3);
+      drawEar(cx + 130, cy - 120, 0.3);
 
-      // 눈
       octx.fillStyle = '#1c1c1e';
       octx.beginPath();
-      octx.arc(cx - 60, cy + 5, 11, 0, Math.PI * 2);
-      octx.arc(cx + 60, cy + 5, 11, 0, Math.PI * 2);
+      octx.arc(cx - 70, cy + 5, 13, 0, Math.PI * 2);
+      octx.arc(cx + 70, cy + 5, 13, 0, Math.PI * 2);
       octx.fill();
 
-      // 입
       octx.beginPath();
-      octx.lineWidth = 5;
+      octx.lineWidth = 6;
       octx.strokeStyle = '#1c1c1e';
-      octx.arc(cx - 10, cy + 28, 11, 0.1 * Math.PI, 0.9 * Math.PI);
+      octx.arc(cx - 12, cy + 32, 13, 0.1 * Math.PI, 0.9 * Math.PI);
       octx.stroke();
       octx.beginPath();
-      octx.arc(cx + 10, cy + 28, 11, 0.1 * Math.PI, 0.9 * Math.PI);
+      octx.arc(cx + 12, cy + 32, 13, 0.1 * Math.PI, 0.9 * Math.PI);
       octx.stroke();
 
-      // 홍조
       octx.fillStyle = '#ff8fa3';
       octx.beginPath();
-      octx.ellipse(cx - 105, cy + 35, 30, 18, 0, 0, Math.PI * 2);
-      octx.ellipse(cx + 105, cy + 35, 30, 18, 0, 0, Math.PI * 2);
+      octx.ellipse(cx - 130, cy + 40, 36, 22, 0, 0, Math.PI * 2);
+      octx.ellipse(cx + 130, cy + 40, 36, 22, 0, 0, Math.PI * 2);
       octx.fill();
 
       const img = new Image();
       img.onload = () => {
-        baseImage = img;
+        updateGLTexture(img);
+        // 기본 양볼 마스크 프리셋
         maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        initMesh();
-        
-        // 기본 양볼 마스크 자동 설정
-        drawMaskCircle(cx - 105, cy + 35, 60);
-        drawMaskCircle(cx + 105, cy + 35, 60);
-        applyDirectWeight(cx - 105, cy + 35, 60, true);
-        applyDirectWeight(cx + 105, cy + 35, 60, true);
-        rebuildActiveTriangles();
+        for (let i = 0; i < numVertices; i++) weightArray[i] = 0;
+
+        applyPaintPreset(cx - 130, cy + 40, 70);
+        applyPaintPreset(cx + 130, cy + 40, 70);
+        resetMeshPositions();
       };
       img.src = off.toDataURL();
     }
 
-    function drawMaskCircle(x, y, r) {
+    function applyPaintPreset(x, y, r) {
       const grad = maskCtx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, 'rgba(255, 55, 95, 0.9)');
+      grad.addColorStop(0, 'rgba(255, 55, 95, 0.85)');
       grad.addColorStop(1, 'rgba(255, 55, 95, 0)');
       maskCtx.fillStyle = grad;
       maskCtx.beginPath();
       maskCtx.arc(x, y, r, 0, Math.PI * 2);
       maskCtx.fill();
+      applyDirectWeight(x, y, r, true);
+      updateOverlay();
     }
 
-    // 브러시 그리기
-    function applyPaint(x, y) {
-      maskCtx.save();
-      if (paintTool === 'brush') {
-        maskCtx.globalCompositeOperation = 'source-over';
-        const rad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
-        rad.addColorStop(0, 'rgba(255, 55, 95, 0.9)');
-        rad.addColorStop(1, 'rgba(255, 55, 95, 0)');
-        maskCtx.fillStyle = rad;
-        applyDirectWeight(x, y, brushRadius, true);
-      } else {
-        maskCtx.globalCompositeOperation = 'destination-out';
-        const rad = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius);
-        rad.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        rad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        maskCtx.fillStyle = rad;
-        applyDirectWeight(x, y, brushRadius, false);
-      }
-      maskCtx.beginPath();
-      maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
-      maskCtx.fill();
-      maskCtx.restore();
-    }
-
-    // 물리 인터랙션
-    function applyDeformation(targetX, targetY, prevX, prevY) {
-      const dx = targetX - prevX;
-      const dy = targetY - prevY;
-      const rSq = influenceRadius * influenceRadius;
-
-      for (let i = 0; i < vertices.length; i++) {
-        const v = vertices[i];
-        if (v.weight <= 0.01) continue;
-
-        const dX = v.x - prevX;
-        const dY = v.y - prevY;
-        const distSq = dX * dX + dY * dY;
-        if (distSq < rSq) {
-          const factor = (1 - Math.sqrt(distSq) / influenceRadius) * v.weight;
-          v.x += dx * factor;
-          v.y += dy * factor;
-        }
+    function resetMeshPositions() {
+      for (let i = 0; i < numVertices * 2; i++) {
+        posArray[i] = origPosArray[i];
+        velArray[i] = 0;
       }
     }
 
-    function updatePhysics() {
-      if (!springBack && isDragging) return;
-
-      const damping = 0.82;
-      for (let i = 0; i < vertices.length; i++) {
-        const v = vertices[i];
-        if (v.weight <= 0.01) continue;
-
-        const forceX = (v.origX - v.x) * elasticity;
-        const forceY = (v.origY - v.y) * elasticity;
-
-        v.vx = (v.vx + forceX) * damping;
-        v.vy = (v.vy + forceY) * damping;
-
-        v.x += v.vx;
-        v.y += v.vy;
-      }
-    }
-
-    // [최적화 렌더러] 전체 이미지를 먼저 통째로 그리고, 변형된 볼 부위 삼각형만 오버드로우
-    function render() {
-      if (baseImage) {
-        // 1. 기본 베이스 이미지 단 1회 렌더링
-        ctx.drawImage(baseImage, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-        // 2. 변형된 삼각형들만 선별적으로 변환 렌더링 (병목 완전 제거)
-        for (let i = 0; i < activeTriangles.length; i++) {
-          const tri = activeTriangles[i];
-          if (tri.isDynamic) {
-            drawTriangleFast(tri.v1, tri.v2, tri.v3);
-          }
-        }
-      }
-
-      // 페인트 모드 마스크 오버레이
-      if (currentMode === 'paint') {
-        ctx.save();
-        ctx.globalAlpha = maskOpacity;
-        ctx.drawImage(maskCanvas, 0, 0);
-        ctx.restore();
-      }
-
-      updatePhysics();
-      requestAnimationFrame(render);
-    }
-
-    function drawTriangleFast(v1, v2, v3) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(v1.x, v1.y);
-      ctx.lineTo(v2.x, v2.y);
-      ctx.lineTo(v3.x, v3.y);
-      ctx.closePath();
-      ctx.clip();
-
-      const u0 = v1.origX, v0 = v1.origY;
-      const u1 = v2.origX, v1_ = v2.origY;
-      const u2 = v3.origX, v2_ = v3.origY;
-
-      const delta = u0 * (v1_ - v2_) + u1 * (v2_ - v0) + u2 * (v0 - v1_);
-      if (Math.abs(delta) > 0.001) {
-        const x0 = v1.x, y0 = v1.y;
-        const x1 = v2.x, y1 = v2.y;
-        const x2 = v3.x, y2 = v3.y;
-
-        const a = (x0 * (v1_ - v2_) + x1 * (v2_ - v0) + x2 * (v0 - v1_)) / delta;
-        const b = (y0 * (v1_ - v2_) + y1 * (v2_ - v0) + y2 * (v0 - v1_)) / delta;
-        const c = (u0 * (x1 - x2) + u1 * (x2 - x0) + u2 * (x0 - x1)) / delta;
-        const d = (u0 * (y1 - y2) + u1 * (y2 - y0) + u2 * (y0 - y1)) / delta;
-        const e = (u0 * (v2_ * x1 - v1_ * x2) + u1 * (v0 * x2 - v2_ * x0) + u2 * (v1_ * x0 - v0 * x1)) / delta;
-        const f = (u0 * (v2_ * y1 - v1_ * y2) + u1 * (v0 * y2 - v2_ * y0) + u2 * (v1_ * y0 - v0 * y1)) / delta;
-
-        ctx.transform(a, b, c, d, e, f);
-        ctx.drawImage(baseImage, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      }
-      ctx.restore();
-    }
-
-    // 커서 위치 업데이트
-    function updateBrushCursorPos(clientX, clientY) {
+    // 커서 동기화
+    function updateCursor(clientX, clientY) {
       const rect = container.getBoundingClientRect();
       brushCursor.style.left = `${clientX - rect.left}px`;
       brushCursor.style.top = `${clientY - rect.top}px`;
-      const diameter = brushRadius * 2 * (rect.width / CANVAS_SIZE);
-      brushCursor.style.width = `${diameter}px`;
-      brushCursor.style.height = `${diameter}px`;
+      const diam = brushRadius * 2 * (rect.width / CANVAS_SIZE);
+      brushCursor.style.width = `${diam}px`;
+      brushCursor.style.height = `${diam}px`;
     }
 
     // 이벤트 리스너
     container.addEventListener('mousemove', (e) => {
       if (currentMode === 'paint') {
         brushCursor.classList.remove('hidden');
-        updateBrushCursorPos(e.clientX, e.clientY);
+        updateCursor(e.clientX, e.clientY);
         if (isDrawing) {
-          const pt = getCanvasCoords(e.clientX, e.clientY);
+          const pt = getCoords(e.clientX, e.clientY);
           applyPaint(pt.x, pt.y);
         }
       } else if (isDragging) {
-        const pt = getCanvasCoords(e.clientX, e.clientY);
+        const pt = getCoords(e.clientX, e.clientY);
         const last = touches.get('mouse') || pt;
         applyDeformation(pt.x, pt.y, last.x, last.y);
         touches.set('mouse', pt);
@@ -604,44 +644,42 @@
     });
 
     container.addEventListener('mousedown', (e) => {
-      const pt = getCanvasCoords(e.clientX, e.clientY);
+      const pt = getCoords(e.clientX, e.clientY);
       if (currentMode === 'paint') {
         isDrawing = true;
         applyPaint(pt.x, pt.y);
       } else {
         isDragging = true;
         touches.set('mouse', pt);
-        playSqueakSound(1.1);
+        playSqueak(1.15);
       }
     });
 
     window.addEventListener('mouseup', () => {
-      if (isDrawing) {
-        isDrawing = false;
-        rebuildActiveTriangles();
-      }
+      if (isDrawing) isDrawing = false;
       if (isDragging) {
         isDragging = false;
         touches.delete('mouse');
-        playSqueakSound(0.85);
+        playSqueak(0.9);
       }
     });
 
     container.addEventListener('mouseleave', () => brushCursor.classList.add('hidden'));
 
+    // 멀티터치
     container.addEventListener('touchstart', (e) => {
       e.preventDefault();
       initAudio();
       if (currentMode === 'paint') {
         isDrawing = true;
-        const pt = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        const pt = getCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
       } else {
         isDragging = true;
-        playSqueakSound(1.1);
+        playSqueak(1.15);
         for (let i = 0; i < e.changedTouches.length; i++) {
           const t = e.changedTouches[i];
-          touches.set(t.identifier, getCanvasCoords(t.clientX, t.clientY));
+          touches.set(t.identifier, getCoords(t.clientX, t.clientY));
         }
       }
     }, { passive: false });
@@ -649,12 +687,12 @@
     container.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (currentMode === 'paint' && isDrawing) {
-        const pt = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        const pt = getCoords(e.touches[0].clientX, e.touches[0].clientY);
         applyPaint(pt.x, pt.y);
       } else if (isDragging) {
         for (let i = 0; i < e.changedTouches.length; i++) {
           const t = e.changedTouches[i];
-          const pt = getCanvasCoords(t.clientX, t.clientY);
+          const pt = getCoords(t.clientX, t.clientY);
           const last = touches.get(t.identifier) || pt;
           applyDeformation(pt.x, pt.y, last.x, last.y);
           touches.set(t.identifier, pt);
@@ -663,21 +701,19 @@
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
-      if (currentMode === 'paint' && isDrawing) {
-        isDrawing = false;
-        rebuildActiveTriangles();
-      } else if (isDragging) {
+      if (currentMode === 'paint' && isDrawing) isDrawing = false;
+      else if (isDragging) {
         for (let i = 0; i < e.changedTouches.length; i++) {
           touches.delete(e.changedTouches[i].identifier);
         }
         if (touches.size === 0) {
           isDragging = false;
-          playSqueakSound(0.85);
+          playSqueak(0.9);
         }
       }
     });
 
-    // 로컬 이미지 파일 로드
+    // 사진 파일 업로드
     function loadFileImage(file) {
       if (!file || !file.type.startsWith('image/')) return;
       const reader = new FileReader();
@@ -699,9 +735,11 @@
 
           const croppedImg = new Image();
           croppedImg.onload = () => {
-            baseImage = croppedImg;
+            updateGLTexture(croppedImg);
             maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            initMesh();
+            for (let i = 0; i < numVertices; i++) weightArray[i] = 0;
+            resetMeshPositions();
+            updateOverlay();
             setMode('paint');
           };
           croppedImg.src = off.toDataURL();
@@ -715,7 +753,19 @@
       if (e.target.files && e.target.files[0]) loadFileImage(e.target.files[0]);
     });
 
-    // 모드 전환
+    // 클립보드 붙여넣기 (Ctrl + V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          loadFileImage(item.getAsFile());
+          break;
+        }
+      }
+    });
+
+    // 모드 탭
     const tabSquish = document.getElementById('tabSquish');
     const tabPaint = document.getElementById('tabPaint');
     const panelSquish = document.getElementById('panelSquish');
@@ -728,20 +778,22 @@
         tabPaint.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-1.5";
         panelSquish.classList.remove('hidden');
         panelPaint.classList.add('hidden');
+        overlayCanvas.classList.add('hidden');
         brushCursor.classList.add('hidden');
-        rebuildActiveTriangles();
       } else {
         tabPaint.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center gap-1.5";
         tabSquish.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-1.5";
         panelPaint.classList.remove('hidden');
         panelSquish.classList.add('hidden');
+        overlayCanvas.classList.remove('hidden');
+        updateOverlay();
       }
     }
 
     tabSquish.addEventListener('click', () => setMode('squish'));
     tabPaint.addEventListener('click', () => setMode('paint'));
 
-    // 도구 전환
+    // 브러시 도구
     const btnToolBrush = document.getElementById('btnToolBrush');
     const btnToolEraser = document.getElementById('btnToolEraser');
     btnToolBrush.addEventListener('click', () => {
@@ -761,8 +813,8 @@
 
     document.getElementById('btnClearMask').addEventListener('click', () => {
       maskCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      for (let i = 0; i < vertices.length; i++) vertices[i].weight = 0;
-      rebuildActiveTriangles();
+      for (let i = 0; i < numVertices; i++) weightArray[i] = 0;
+      updateOverlay();
     });
 
     // 슬라이더 바인딩
@@ -773,6 +825,7 @@
     document.getElementById('sliderMaskOpacity').addEventListener('input', (e) => {
       maskOpacity = parseInt(e.target.value) / 100;
       document.getElementById('txtMaskOpacity').innerText = `${e.target.value}%`;
+      updateOverlay();
     });
     document.getElementById('sliderElasticity').addEventListener('input', (e) => {
       elasticity = parseFloat(e.target.value);
@@ -786,14 +839,7 @@
       springBack = e.target.checked;
     });
 
-    document.getElementById('btnResetPhysics').addEventListener('click', () => {
-      for (let i = 0; i < vertices.length; i++) {
-        vertices[i].x = vertices[i].origX;
-        vertices[i].y = vertices[i].origY;
-        vertices[i].vx = 0;
-        vertices[i].vy = 0;
-      }
-    });
+    document.getElementById('btnResetPhysics').addEventListener('click', () => resetMeshPositions());
 
     const btnSoundToggle = document.getElementById('btnSoundToggle');
     const iconSound = document.getElementById('iconSound');
@@ -802,16 +848,17 @@
       iconSound.className = soundEnabled ? 'ph-bold ph-speaker-high' : 'ph-bold ph-speaker-slash text-zinc-500';
     });
 
-    document.getElementById('btnSample').addEventListener('click', () => createDefaultSample());
+    document.getElementById('btnSample').addEventListener('click', () => loadSampleImage());
 
-    // 스냅샷 & 비디오 녹화
+    // 스냅샷
     document.getElementById('btnSnapshot').addEventListener('click', () => {
       const link = document.createElement('a');
       link.download = `moti-hoppe-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = glCanvas.toDataURL('image/png');
       link.click();
     });
 
+    // 녹화
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
@@ -831,7 +878,7 @@
     function startRecording() {
       if (currentMode !== 'squish') setMode('squish');
       recordedChunks = [];
-      const stream = canvas.captureStream(60);
+      const stream = glCanvas.captureStream(60);
       let options = { mimeType: 'video/webm;codecs=vp9' };
       if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: 'video/webm' };
 
@@ -881,8 +928,8 @@
       recBadge.classList.add('hidden');
     }
 
-    // 실행 시작
-    createDefaultSample();
+    // 초기 구동
+    loadSampleImage();
     render();
   </script>
 </body>
